@@ -117,21 +117,49 @@ def get_multi_genres(message):
     except Exception as e:
         print(f"Last.fm Error: {e}")
 
-    # 4. MUSICBRAINZ API
-    try:
-        headers = {'User-Agent': 'TelegramGenreBot/1.0'}
-        mb_query = f'recording:"{track_name}" AND artist:"{artist_name}"' if artist_name != "Unknown" else query
-        mb_search = requests.get(f"https://musicbrainz.org/ws/2/recording?query={mb_query}&fmt=json", headers=headers).json()
-        if mb_search.get('recordings'):
-            best = mb_search['recordings'][0]
-            if 'tags' in best:
-                sorted_tags = sorted(best['tags'], key=lambda x: x.get('count', 0), reverse=True)
-                m_genres = [t['name'].title() for t in sorted_tags[:5]]
-                if m_genres:
-                    mb_genres = ", ".join(m_genres)
-    except Exception as e:
-        print(f"MusicBrainz Error: {e}")
+    # 4. MUSICBRAINZ API (fixed)
+try:
+    headers = {'User-Agent': 'TelegramGenreBot/1.0'}
+    
+    if artist_name != "Unknown":
+        mb_query = f'recording:"{track_name}" AND artist:"{artist_name}"'
+    else:
+        mb_query = query
 
+    mb_search = requests.get(
+        f"https://musicbrainz.org/ws/2/recording?query={mb_query}&fmt=json",
+        headers=headers
+    ).json()
+
+    if mb_search.get('recordings'):
+        best_mb = mb_search['recordings'][0]
+        
+        # Get the artist MBID from the recording
+        artist_credits = best_mb.get('artist-credit', [])
+        if artist_credits:
+            artist_mbid = artist_credits[0].get('artist', {}).get('id')
+            
+            if artist_mbid:
+                # Now query the artist directly — this is where genres actually live
+                artist_data = requests.get(
+                    f"https://musicbrainz.org/ws/2/artist/{artist_mbid}?inc=genres+tags&fmt=json",
+                    headers=headers
+                ).json()
+
+                # Try genres first (MB's curated system)
+                genres = artist_data.get('genres', [])
+                if genres:
+                    sorted_genres = sorted(genres, key=lambda x: x.get('count', 0), reverse=True)
+                    mb_genres = ", ".join([g['name'].title() for g in sorted_genres[:5]])
+                
+                # Fall back to tags if no genres
+                elif artist_data.get('tags'):
+                    sorted_tags = sorted(artist_data['tags'], key=lambda x: x.get('count', 0), reverse=True)
+                    mb_genres = ", ".join([t['name'].title() for t in sorted_tags[:5]])
+
+except Exception as e:
+    print(f"MusicBrainz Error: {e}")
+    
     # 5. DISCOGS API
     try:
         discogs_headers = {'User-Agent': 'TelegramGenreBot/1.0', 'Authorization': f'Discogs token={DISCOGS_TOKEN}'}
