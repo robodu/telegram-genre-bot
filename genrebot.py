@@ -169,7 +169,7 @@ def get_multi_genres(message):
     response_text += f"🎤 <b>Artist:</b> {html.escape(artist_name)}\n"
     response_text += f"💽 <b>Album:</b> {html.escape(album_name)}\n\n"
     
-    response_text += f"✨ <b>AI Vibe Check:</b> <i>{html.escape(gemini_summary)}</i>\n\n"
+    response_text += f"✨ <b>Genre Check:</b> <i>{html.escape(gemini_summary)}</i>\n\n"
     
     response_text += "<blockquote>"
     response_text += f"💿 <b>Discogs:</b> {html.escape(discogs_output)}\n"
