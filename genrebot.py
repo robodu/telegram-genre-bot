@@ -6,6 +6,8 @@ from spotipy.cache_handler import MemoryCacheHandler
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import html
 import os
+import threading
+from flask import Flask
 from google import genai
 
 # --- CLOUD CONFIGURATION ---
@@ -117,7 +119,7 @@ def get_multi_genres(message):
     except Exception as e:
         print(f"Last.fm Error: {e}")
 
-# 4. MUSICBRAINZ API
+    # 4. MUSICBRAINZ API
     try:
         # MusicBrainz requires a contact email in the header to prevent silent blocks
         headers = {'User-Agent': 'TelegramGenreBot/1.0 ( rdaighu@gmail.com )'}
@@ -195,5 +197,22 @@ def get_multi_genres(message):
     except Exception as e:
         bot.reply_to(message, f"Oops! Error: {e}")
 
-print("Bot is polling on Railway with Gemini AI integration...")
-bot.infinity_polling()
+
+# --- FLASK DUMMY SERVER (Keeps Render Free Tier Alive) ---
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running beautifully on Render!"
+
+def run_bot():
+    print("Bot is polling on Render with Gemini AI integration...")
+    bot.infinity_polling(skip_pending=True)
+
+if __name__ == "__main__":
+    # Run the Telegram bot in the background
+    threading.Thread(target=run_bot).start()
+    
+    # Bind the Flask web server to Render's required port
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host="0.0.0.0", port=port, use_reloader=False)
