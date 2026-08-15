@@ -163,7 +163,7 @@ def get_multi_genres(message):
         if artist_name != "Unknown":
             prompt = f"In exactly one short, engaging sentence, describe the musical style, mood, and vibe of the song '{track_name}' by {artist_name}."
             response = gemini_client.models.generate_content(
-                model='gemini-3.5-lite',
+                model='gemini-3.5-flash-lite',
                 contents=prompt
             )
 
